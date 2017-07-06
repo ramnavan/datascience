@@ -1,0 +1,112 @@
+---
+  title: "Connecting to Data"
+output:
+  html_document: default
+---
+This notebook contains code examples to connect to AWS S3, Redshift, MySQL, and Hive
+
+### S3
+```{r, eval = FALSE}
+library('aws.s3')
+
+# Set up S3 credentials
+aws_key = Sys.getenv(<AWS Access Key>)
+aws_secret = Sys.getenv(<AES Secret Key>)
+
+# Pull an RData file from S3
+# Analogous to load()
+s3load(<key>, bucket = <bucket name>)
+
+# Push an RData file to S3
+# Analogous to save()
+s3save(<objects., bucket = <bucket name>, object = <key>)
+
+# save a dataset to the bucket as a csv
+if (require("utils")) {
+  s3write_using(mtcars, FUN = write.csv, object = "mtcars.csv", bucket = b)
+}
+
+# load dataset from the bucket as a csv
+if (require("utils")) {
+  s3read_using(FUN = read.csv, object = "mtcars.csv", bucket = b)
+}
+
+# cleanup
+delete_object(object = "mtcars.csv", bucket = b)
+delete_bucket(bucket = b)
+```
+
+### Redshift
+```{r, eval = FALSE}
+# We will use the RJDBC library. An alternative is to combine dplyr with RPostgreSQL
+install.packages("RJDBC")
+library(RJDBC)
+# Download the driver that we need
+download.file('http://s3.amazonaws.com/redshift-downloads/drivers/RedshiftJDBC41-1.1.9.1009.jar','RedshiftJDBC41-1.1.9.1009.jar')
+
+# Connect to Amazon Redshift
+driver <- JDBC("com.amazon.redshift.jdbc41.Driver", "RedshiftJDBC41-1.1.9.1009.jar", identifier.quote="`")
+
+# URL format: "<JDBCURL>:<PORT>/<DBNAME>?user=<USER>&password=<PW>
+jdbcurl = "jdbc:redshift://demo.ckffhmu2rolb.eu-west-1.redshift.amazonaws.com"
+port = "5439"
+dbname = "demo"
+user = "example_user"
+password = "example_pw"
+url = paste0(jdbcurl, ":", port, "/", dbname, "?user=", user, "&password=", password)
+
+# Set up connection
+conn = dbConnect(driver, url)
+
+# Sample query to list tables
+dbGetTables(conn)
+dbGetQuery(conn, "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
+
+# Close connection
+dbDisconnect(conn)
+```
+
+### MySQL
+```{r, eval = FALSE}
+# Install MySQL
+system('sudo apt-get -y update')
+system('sudo apt-get -y install libmysqlclient-dev')
+
+# Install and import RMySQL
+install.packages("RMySQL")
+library(RMySQL)
+
+# Set up connection
+conn = dbConnect(MySQL(),
+                 user = 'example_user',
+                 password = 'example_pw',
+                 host = 'example_host',
+                 dbname='example_db')
+
+dbGetQuery(conn = conn, statement = "Example statement")
+
+# Close connection
+dbDisconnect(conn)
+```
+
+### Hive
+```{r, eval = FALSE}
+# Import libraries
+library(rJava)
+library(RJDBC)
+
+# Set up the environment
+.jinit(parameters=c("-Xmx8g", "-Djava.security.auth.login.config=/home/rstudio/jaas.conf", "-Djava.security.krb5.conf=/etc/krb5.conf", "-Djavax.security.auth.useSubjectCredsOnly=false"))
+for(l in list.files("/usr/lib/hive/lib/")){.jaddClassPath(paste("/usr/lib/hive/lib/",l,sep=""))}
+.jclassPath()
+for(l in list.files('/usr/lib/hadoop/')){.jaddClassPath(paste("/usr/lib/hadoop/",l,sep=""))}
+.jclassPath()
+
+# Specify the driver to use
+drv = JDBC("org.apache.hive.jdbc.HiveDriver", "/usr/lib/hive/lib/hive-jdbc.jar")
+
+# Set up the connection
+conn  dbConnect(drv, "example_address")
+selecttest = dbGetQuery(conn, "example_statement")
+selecttest
+```
