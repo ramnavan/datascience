@@ -1,0 +1,66 @@
+---
+title: "Model Deploy Instructions"
+output:
+  html_document: default
+---
+
+# Introduction
+
+Imagine that you are a data scientist at a company that has to perform dynamic inventory management. An example of that would be a ride-sharing company where you want to know which parts of a city to direct your drivers to depending on the time of day and other factors.
+
+Using data from pickups made by Uber in New York City, we created a random forest model to predict demand given the hour, date, and location. The algorithm includes feature engineering (day of the week, whether it is a holiday, and weather), which the model uses to predict the number of pickups.
+
+In this section we'll deploy this model.  After it has been deployed, we can query it in real time to obtain predictions for demand at a particular time and place.
+
+The model will take in the hour, date, and location names as inputs and return the predicted demand (in terms of number of expected pickups) as the output.
+
+## The Model Script
+ 
+The main script that contains the model code is r-deploy-me.R
+
+Let's open the file to look at the structure of a model.  
+We first load libraries that we will use and then train the model. The training steps are not carried out when we deploy this model; instead we will load a pre-trained model in the interest of time. However it is good practice to have the code easily accessible so we can retrain the model and/or retrace our work if needed. After training/loading the pre-trained model, we get to the prediction function, pred_pickups(hour, date, location_name)
+
+When a model is deployed, the script is run once from top to bottom.  This allows us to define all of the functions we need and load all of the data, models, and functions we need to load into memory.
+
+After the script is run once and the model is set up, when an API call is made, the predict function, in our case pred_pickups(hour, date, location_name) is called.   
+
+Now that we conceptually understand how a model script works, let's look at how we can set it up to deploy.
+
+## Deploying the Model
+
+From the project page click the Deploy an API from the drop-down menu.
+
+Fill in a name and a description for the model and click Next.
+
+Under branch, select the branch containing the model code to be deployed.  For this demo select master.
+
+The field 'Path to Model' points to the model script to be deployed.  For this demo we will deploy the model script r-deploy-me.R, so enter that in this field.
+
+We will now configure the model environment.  Click the edit button next to Environment Configuration.  In this screen we can configure the language, package dependencies, and compute resources our model will require.  Select R for the model language.
+
+
+We may wish to pre-define packages and dependencies that will be installed when we deploy our model.  To do this, we can list these packages and dependencies in text files, and point the platform to these files using the Add Requirements section. Next to the field labeled R, enter r-demo-model-req.R
+This will install packages on the model environment's operating system.
+
+Finally, select at least a 2GB environment under Computational Resources</span> and click Save.  
+
+Next, we need to specify the function that will run when the API is called.  We saw earlier that the function in our script is called pred_pickups so enter that in the Specify Function text box.  
+
+We can also Give an Example input to the API that will show up in the DS Platform deploy UI.  While this is not required, it is important to help others know how to use your model.  Our model takes three arguments: hour (24H, integer), date (YYYY-MM-DD format), and location_name (character).  Input data is passed to the model as valid JSON with function arguments as keys.  To pass in the arguments hour = 20, date = "2017-01-01", and location_name = "West Village" enter {"hour": 20, "date": "2017-01-01", "location_name": "West Village"} as your example.
+
+We're ready to deploy the model!  Add a Commit Message (note that this we are NOT committing anything to GitHub, this is a message associated only with the API) and click Deploy
+
+On the screen overlay that comes up, click Go To Model.
+
+The deployed model will first run through a number of automated setup steps to spin up an environment that will host the model, and to install model requirements.  When this process completes successfully, we will see its status change to running, indicating that we can now use the model.
+
+When models are updated or changed, new versions can be deployed using the Deploy New Version button, and any of the different versions can be deployed simultaneously, providing for the ability to test model changes on real-time data.
+
+Now that our model is successfuly deployed we can get use it to get predictions.  The DataScience Platform provides an easy way to run samples to make sure the model is working properly.  The example input we defined appears in the model GUI to help users understand how to use the model.  Let's run a few samples.
+
+The DataScience Platform also generates the API endpoint we need to query to generate predictions.  We can for example embed the cURL, Python, or Node code into any application or program.  For example, we can copy the cURL to a terminal window and run it from there.
+
+## Congratulations!
+
+You've deployed your first model on the DataScience Platform.  In a very short time frame we were able to deploy a model behind an API so that it can be used by anyone in the organization and can be accessed in a variety of different contexts including applications and websites.  Importantly, we were able to quickly accomplish this without relying heavily on engineering resources that may be constrained.
